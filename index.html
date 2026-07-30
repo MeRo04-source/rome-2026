@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Roma 2026 · Julien & Pevzner</title>
+<meta name="theme-color" content="#7a2e1d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Roma 2026">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --terra:#7a2e1d; --terra2:#a4432c; --cream:#faf6ef; --card:#ffffff;
+  --ink:#2b2118; --muted:#8a7a6d; --line:#eee5d8; --gold:#c8973e;
+  --gelato:#d6608f; --street:#e0862c; --meal:#5f7d46; --booked:#7a5ba6;
+  --stay:#3d6b9e; --sight:#b3892b;
+  --nav-h:64px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);overscroll-behavior-y:none}
+h1,h2,h3,.serif{font-family:'Fraunces',Georgia,serif}
+
+/* ===== header ===== */
+header{position:sticky;top:0;z-index:1000;background:linear-gradient(135deg,var(--terra),var(--terra2));color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 18px 12px}
+header h1{font-size:1.25rem;letter-spacing:.3px}
+header p{font-size:.75rem;opacity:.85;margin-top:1px}
+
+/* ===== pages ===== */
+.page{display:none;padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 16px)}
+.page.active{display:block}
+.wrap{max-width:680px;margin:0 auto;padding:16px}
+
+/* ===== bottom nav ===== */
+nav{position:fixed;bottom:0;left:0;right:0;z-index:1000;background:#fff;border-top:1px solid var(--line);display:flex;height:calc(var(--nav-h) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;font-family:inherit;font-size:.68rem;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer}
+nav button .ico{font-size:1.35rem;line-height:1}
+nav button.on{color:var(--terra)}
+nav button.on .ico{transform:scale(1.1)}
+
+/* ===== agenda ===== */
+.day{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;overflow:hidden}
+.day-h{padding:12px 16px;background:#fdfaf4;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline}
+.day-h h3{font-size:1.02rem;color:var(--terra)}
+.day-h span{font-size:.72rem;color:var(--muted)}
+.evt{display:flex;gap:12px;padding:11px 16px;border-bottom:1px solid #f6f0e6}
+.evt:last-child{border-bottom:0}
+.evt .t{min-width:52px;font-weight:700;font-size:.8rem;color:var(--terra2);padding-top:1px}
+.evt .d{font-size:.87rem;line-height:1.45;flex:1}
+.evt .d small{display:block;color:var(--muted);font-size:.76rem;margin-top:1px}
+.evt.dinner{background:#fdf7fb}
+.badge{display:inline-block;font-size:.66rem;font-weight:700;padding:1px 8px;border-radius:99px;color:#fff;vertical-align:1px;margin-left:4px}
+.b-julien{background:#3d6b9e}.b-pevzner{background:#a4432c}.b-all{background:#5f7d46}
+
+/* ===== map ===== */
+#map-page{position:relative}
+#map{position:fixed;inset:0;top:0;bottom:0;z-index:1}
+.map-top{position:fixed;left:0;right:0;z-index:500;padding:10px 12px;pointer-events:none}
+.chips{display:flex;gap:6px;overflow-x:auto;pointer-events:auto;padding-bottom:4px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1.5px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font-family:inherit;font-size:.78rem;font-weight:500;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);color:var(--ink)}
+.chip.on{background:var(--terra);border-color:var(--terra);color:#fff}
+.locbtn{position:fixed;right:14px;z-index:500;background:#fff;border:1.5px solid var(--line);border-radius:14px;width:46px;height:46px;font-size:1.3rem;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.14)}
+.locbtn.busy{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.leaflet-popup-content-wrapper{border-radius:14px;overflow:hidden}
+.leaflet-popup-content{margin:0;width:230px!important}
+.pop img{width:100%;height:110px;object-fit:cover;display:block}
+.pop .pi{padding:10px 12px 12px}
+.pop h4{font-family:'Fraunces',serif;font-size:.98rem;margin-bottom:2px}
+.pop p{font-size:.76rem;color:var(--muted);line-height:1.4;margin-bottom:8px}
+.pop .dist{color:var(--terra2);font-weight:700}
+.gobtn{display:block;text-align:center;background:var(--terra);color:#fff;border-radius:10px;padding:8px;font-size:.8rem;font-weight:700;text-decoration:none}
+.pin{border-radius:50%;border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-size:14px}
+.mepin{background:#2f80ed;border:3px solid #fff;border-radius:50%;box-shadow:0 0 0 6px rgba(47,128,237,.25)}
+
+/* ===== food list ===== */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:12px;overflow:hidden;display:flex}
+.card .im{width:104px;min-height:104px;flex-shrink:0;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:2rem}
+.card .cb{padding:10px 12px;flex:1;min-width:0}
+.card h4{font-size:.95rem;line-height:1.2}
+.card .cat{font-size:.66rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin:2px 0 3px}
+.card p{font-size:.78rem;color:var(--muted);line-height:1.4}
+.card .row{display:flex;gap:8px;margin-top:7px;align-items:center}
+.card .row a{font-size:.75rem;font-weight:700;color:var(--terra);text-decoration:none;border:1.5px solid var(--line);padding:4px 10px;border-radius:99px}
+.card .dd{font-size:.72rem;color:var(--terra2);font-weight:700}
+.tools{display:flex;gap:8px;margin:2px 0 14px}
+.tools button{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px;font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;color:var(--ink)}
+.tools button.on{background:var(--terra);color:#fff;border-color:var(--terra)}
+
+/* ===== info ===== */
+.info-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px}
+.info-card h3{color:var(--terra);font-size:1.02rem;margin-bottom:8px}
+.info-card p,.info-card li{font-size:.86rem;line-height:1.55}
+.info-card ul{padding-left:18px}
+.info-card .hl{background:#eaf7e6;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:.84rem}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f6f0e6;font-size:.85rem;gap:10px}
+.kv:last-child{border-bottom:0}
+.kv b{white-space:nowrap}
+.kv span{text-align:right;color:var(--muted)}
+.price{display:flex;gap:8px;margin-top:8px}
+.price div{flex:1;text-align:center;background:#fdfaf4;border:1px solid var(--line);border-radius:12px;padding:10px 4px}
+.price .n{font-family:'Fraunces',serif;font-size:1.25rem;font-weight:700;color:var(--terra)}
+.price .l{font-size:.68rem;color:var(--muted);margin-top:2px}
+.sec-t{font-size:1.05rem;color:var(--terra);margin:6px 0 10px}
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <h1>Roma 2026 🇮🇹</h1>
+  <p>Julien &amp; Pevzner families · 28 Aug – 2 Sep</p>
+</header>
+
+<!-- ================= AGENDA ================= -->
+<div class="page active" id="p-agenda"><div class="wrap" id="agenda"></div></div>
+
+<!-- ================= MAP ================= -->
+<div class="page" id="p-map">
+  <div id="map"></div>
+  <div class="map-top" id="mapTop"><div class="chips" id="mapChips"></div></div>
+  <button class="locbtn" id="locBtn" title="Find me">📍</button>
+</div>
+
+<!-- ================= FOOD ================= -->
+<div class="page" id="p-food">
+  <div class="wrap">
+    <h2 class="sec-t">Eat &amp; Drink</h2>
+    <div class="tools">
+      <button id="nearBtn">📍 Sort by distance from me</button>
+    </div>
+    <div class="chips" id="listChips" style="margin-bottom:12px"></div>
+    <div id="foodList"></div>
+  </div>
+</div>
+
+<!-- ================= INFO ================= -->
+<div class="page" id="p-info">
+  <div class="wrap">
+    <h2 class="sec-t">Hotels &amp; Bookings</h2>
+    <div class="info-card">
+      <h3>🏨 Hotels</h3>
+      <div class="kv"><b>Pevzners</b><span>Hotel Degli Artisti · Via degli Artisti 18 · booked under “Mescal”</span></div>
+      <div class="kv"><b>Juliens</b><span>The Tribune Hotel · Via Campania 45 · booked under “Julien”</span></div>
+    </div>
+    <div class="info-card">
+      <h3>🍽️ Restaurant bookings</h3>
+      <div class="kv"><b>Sun 30 · 18:00</b><span>Osteria da Fortunata (Pantheon) · “Katarina Mescal 1025 AD” · 8 people<br>(19:00 duplicate under “Julien” — cancel one)</span></div>
+      <div class="kv"><b>Mon 31 · 19:30</b><span>Moma · Via di San Basilio 42/43 · “Kimberly Julien”</span></div>
+      <div class="kv"><b>Tue 1 · 19:00</b><span>Imàgo at the Hassler · Trinità dei Monti 6 · “Katarina Mescal”</span></div>
+    </div>
+    <div class="info-card">
+      <h3>✈️ Arrivals &amp; departures</h3>
+      <div class="kv"><b>Fri 28 · 14:10</b><span>Juliens land FCO · AZ 203</span></div>
+      <div class="kv"><b>Sat 29 · 09:50</b><span>Pevzners land · AA 236</span></div>
+      <div class="kv"><b>Wed 2 · 11:20</b><span>Pevzner train #8418 · Termini → Firenze S.M.N.</span></div>
+      <div class="kv"><b>Wed 2 · 13:50</b><span>Julien flight FCO · AZ 204</span></div>
+    </div>
+
+    <h2 class="sec-t">Tips &amp; Tricks</h2>
+    <div class="info-card">
+      <h3>🥖 The bread basket trap</h3>
+      <p>In Lazio the <i>coperto</i> (cover charge) is actually illegal — but tourist-zone waiters drop uninvited bread and snacks on your table. Eat any of it and you'll find <b>€5–€8</b> on the check.</p>
+      <div class="hl">✅ Just say <b>“No pane, grazie”</b> upfront. The basket disappears, no questions asked.</div>
+    </div>
+    <div class="info-card">
+      <h3>💶 Anchor to local prices</h3>
+      <p>These are your benchmarks. Anything way above means you're in the tourist zone — keep walking.</p>
+      <div class="price">
+        <div><div class="n">€1</div><div class="l">Espresso<br>al banco</div></div>
+        <div><div class="n">€1.50</div><div class="l">Cornetto at<br>a local bar</div></div>
+        <div><div class="n">&lt;€10</div><div class="l">Pizza<br>margherita</div></div>
+      </div>
+    </div>
+    <div class="info-card">
+      <h3>🗺️ Where Romans actually eat</h3>
+      <ul>
+        <li><b>Testaccio</b> — Via Alessandro Volta &amp; Via Luca della Robbia</li>
+        <li><b>Trastevere</b> — Piazza San Cosimato &amp; Via dei Vascellari (skip the main piazza)</li>
+        <li><b>Monti</b> — the blocks behind Via Cavour</li>
+      </ul>
+      <p style="margin-top:6px;color:var(--muted)">Italian-only menus, locals at every table, no “tourist menu” signs = you're in the right place.</p>
+    </div>
+    <div class="info-card">
+      <h3>🍦 Spotting real gelato</h3>
+      <ul>
+        <li>Covered metal tins or low, dense trays = artisanal. Fluffy neon mountains = industrial.</li>
+        <li>Pistachio should be dull olive-brown, never bright green.</li>
+        <li>All eight gelaterias in this app are the real deal — never more than a 15 min walk away.</li>
+      </ul>
+    </div>
+    <div class="info-card">
+      <h3>🗣️ Handy phrases</h3>
+      <div class="kv"><b>No pane, grazie</b><span>No bread, thanks</span></div>
+      <div class="kv"><b>Il conto, per favore</b><span>The bill, please</span></div>
+      <div class="kv"><b>Un tavolo per otto</b><span>A table for eight</span></div>
+      <div class="kv"><b>Due gusti, in cono</b><span>Two flavours, in a cone</span></div>
+      <div class="kv"><b>Dov'è il bagno?</b><span>Where's the bathroom?</span></div>
+    </div>
+    <div class="info-card">
+      <h3>🚕 Getting around</h3>
+      <ul>
+        <li>Both hotels are 5 min apart, near Via Veneto / Barberini (Metro A).</li>
+        <li>Official taxis are white with a meter — or use the <b>FreeNow</b> app. A ride across the centro is ~€10–15.</li>
+        <li>Fines apply for sitting/eating on the Spanish Steps — gelato standing up!</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<nav>
+  <button class="on" data-p="agenda"><span class="ico">📅</span>Agenda</button>
+  <button data-p="map"><span class="ico">🗺️</span>Map</button>
+  <button data-p="food"><span class="ico">🍦</span>Food</button>
+  <button data-p="info"><span class="ico">💡</span>Info</button>
+</nav>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ================= DATA ================= */
+const CATS = {
+  gelato:{label:"🍦 Gelato", color:"#d6608f", emoji:"🍦"},
+  street:{label:"🥪 Street food", color:"#e0862c", emoji:"🥪"},
+  meal:{label:"🍝 Restaurants", color:"#5f7d46", emoji:"🍝"},
+  booked:{label:"⭐ Our bookings", color:"#7a5ba6", emoji:"⭐"},
+  stay:{label:"🏨 Hotels", color:"#3d6b9e", emoji:"🏨"},
+  sight:{label:"🏛️ Spots", color:"#b3892b", emoji:"🏛️"}
+};
+const P = [
+ // hotels
+ {n:"Hotel Degli Artisti (Pevzners)",c:"stay",a:"Via degli Artisti 18",lat:41.9058,lng:12.4878,d:"Pevzner HQ — booked under “Mescal”. Rooftop terrace, 3 min from Piazza Barberini.",img:null},
+ {n:"The Tribune Hotel (Juliens)",c:"stay",a:"Via Campania 45",lat:41.9089,lng:12.4908,d:"Julien HQ — booked under “Julien”. Rooftop Bubbles Bar, 5 min to Via Veneto. Pfeeewww.",img:"https://image-tc.galaxy.tf/wijpeg-bi7nxhtxmpzgg7sfjny2m855u/sliderhomepage-min.jpg?width=1600"},
+ // bookings
+ {n:"Osteria da Fortunata",c:"booked",a:"Piazza della Rotonda 6 (Pantheon)",lat:41.8994,lng:12.4764,d:"Sun 30 Aug, 18:00 · under “Katarina Mescal 1025 AD” · 8 people. Fresh pasta hand-rolled in the window.",img:"https://osteriadafortunata.it/wp-content/uploads/2024/09/1pastaia.jpeg"},
+ {n:"Moma",c:"booked",a:"Via di San Basilio 42/43",lat:41.9052,lng:12.4912,d:"Mon 31 Aug, 19:30 · under “Kimberly Julien”. Michelin-starred, casual downstairs, gourmet upstairs.",img:"https://www.ristorantemoma.it/wp-content/uploads/2013/07/topslidehome_011.jpg"},
+ {n:"Imàgo (Hassler)",c:"booked",a:"Piazza Trinità dei Monti 6",lat:41.9059,lng:12.4837,d:"Tue 1 Sep, 19:00 · under “Katarina Mescal”. Michelin star + rooftop view over all of Rome. Smart dress.",img:"https://www.hotelhasslerroma.com/wp-content/uploads/2026/06/2026_HasslerRoma_Restaurants_Imago_WhatTheFox-0127.webp"},
+ {n:"McDonald's Piazza di Spagna",c:"booked",a:"Piazza di Spagna 46/47",lat:41.9046,lng:12.4831,d:"Sat 29 dinner (proposed) — the historic 1986 one, first McDonald's in Italy. Kids eat any time, zero pressure.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/McDonald%27s_restaurant_-_Piazza_di_Spagna,_ground_floor.jpg?width=1200"},
+ // sights / meeting points
+ {n:"Vatican Museums entrance",c:"sight",a:"Viale Vaticano 100",lat:41.9066,lng:12.4534,d:"Mon 31 Aug — meet 07:45 (15 min before tour, under “Julien”). Collect Wed audience tickets at the bronze door.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Vatican_Museums_Spiral_Staircase_2012.jpg?width=1200"},
+ {n:"PhotoStorica meeting point",c:"sight",a:"Via del Colosseo 31",lat:41.8921,lng:12.4899,d:"Tue 1 Sep, 09:00 — family photos at the Colosseum. Meet in front of Caffè Roma.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Colosseo_2020.jpg?width=1200"},
+ {n:"Spanish Steps",c:"sight",a:"Piazza di Spagna",lat:41.9058,lng:12.4823,d:"7 min from both hotels. No sitting with food — €250 fines. Gelato standing up!",img:"https://commons.wikimedia.org/wiki/Special:FilePath/The_Spanish_Steps,_Rome_(47509253002).jpg?width=1200"},
+ {n:"Pantheon",c:"sight",a:"Piazza della Rotonda",lat:41.8986,lng:12.4769,d:"2000-year-old dome, free-ish entry (€5). Osteria da Fortunata + L'Antica Salumeria are on this square.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Rome_Pantheon_front.jpg?width=1200"},
+ {n:"Roma Termini",c:"sight",a:"Piazza dei Cinquecento",lat:41.9010,lng:12.5011,d:"Wed 2 Sep, 11:20 — Pevzner train #8418 to Florence. Metro A+B hub.",img:null},
+ // gelato
+ {n:"Gelateria del Teatro",c:"gelato",a:"Via dei Coronari 65/66",lat:41.9004,lng:12.4696,d:"Artisan gelato in a former theatre courtyard. Try rosemary-honey-lemon or white chocolate-basil.",img:"https://www.femalefoodie.com/wp-content/uploads/2019/12/Gelateria-del-Teatro-4.jpg"},
+ {n:"Come il Latte",c:"gelato",a:"Via Silvio Spaventa 24/26",lat:41.9073,lng:12.4983,d:"Milk-focused, ultra-creamy. Cones dipped in melted dark or white chocolate. Closest to the hotels!",img:"https://www.datocms-assets.com/168553/1760599560-herocomeillatte.jpg?auto=format&fit=max&w=1200"},
+ {n:"Frigidarium",c:"gelato",a:"Via del Governo Vecchio 112",lat:41.8982,lng:12.4694,d:"Tiny cult favourite near Piazza Navona. Free chocolate dip or whipped cream on top.",img:"https://www.femalefoodie.com/wp-content/uploads/2019/12/Frigidarium-5.jpg"},
+ {n:"Otaleg",c:"gelato",a:"Via di San Cosimato 14a (Trastevere)",lat:41.8881,lng:12.4690,d:"“Gelato” backwards — experimental lab in Trastevere, often rated Rome's very best.",img:"https://www.femalefoodie.com/wp-content/uploads/2019/12/otaleg-3.jpg"},
+ {n:"Gelateria I Caruso",c:"gelato",a:"Via Collina 13/15",lat:41.9077,lng:12.4960,d:"Small-batch classics, few flavours done perfectly. Legendary zabaglione whipped cream. Near the hotels.",img:null},
+ {n:"Fatamorgana",c:"gelato",a:"Via dei Chiavari 37a",lat:41.8949,lng:12.4740,d:"All-natural and 100% gluten-free. Handy to Campo de' Fiori and the Pantheon.",img:"https://www.femalefoodie.com/wp-content/uploads/2019/12/FATAMORGANA-GELATO-3.jpg"},
+ {n:"Gelateria dei Gracchi",c:"gelato",a:"Via dei Gracchi 272 (Prati)",lat:41.9077,lng:12.4697,d:"Prati institution — perfect stop after the Vatican Museums. Celebrated fruit flavours + pistachio.",img:"https://gelateriadeigracchi.it/wp-content/uploads/2025/07/gracchi-home2.webp"},
+ {n:"Gelateria Torcè",c:"gelato",a:"Viale Aventino 59",lat:41.8833,lng:12.4852,d:"Claudio Torcè, godfather of Rome's gourmet gelato. Wild flavours; near Circo Massimo, handy after the Colosseum.",img:"https://gelateriatorce.it/wp-content/uploads/2024/09/featorc.jpg"},
+ // restaurants & cafes
+ {n:"Armando al Pantheon",c:"meal",a:"Salita de' Crescenzi 31",lat:41.8989,lng:12.4760,d:"Tucci's pick — family-run since 1961, steps from the Pantheon. Rigatoni all'amatriciana. Book ahead; closed Sun.",img:"https://www.femalefoodie.com/wp-content/uploads/2022/07/armando-al-patheon-6.jpg"},
+ {n:"Pommidoro",c:"meal",a:"Piazza dei Sanniti 44 (San Lorenzo)",lat:41.8995,lng:12.5158,d:"Tucci's carbonara stop — Roman institution since 1890. Note: often closed late August.",img:null},
+ {n:"A Rota Pizzeria",c:"meal",a:"Via di Tor Pignattara 190",lat:41.8750,lng:12.5412,d:"Tucci's pizza romana — thin crispy scrocchiarella. Worth the tram ride east; dinner-focused.",img:"https://www.lucianopignataro.it/wp-content/uploads/2020/01/A-Rota-La-Margherita.jpg"},
+ {n:"Crazy Pizza",c:"meal",a:"Via Veneto 167",lat:41.9081,lng:12.4884,d:"Kids' favourite — spinning-dough shows, lively music. Pricey (€25-35/pizza) but it's a show. 5 min from hotels.",img:"https://crazypizza.com/rome/wp-content/uploads/sites/5/2025/07/crazy-pizza-rome-hero.webp"},
+ {n:"Bar San Calisto",c:"meal",a:"Piazza di San Calisto 3 (Trastevere)",lat:41.8885,lng:12.4698,d:"Tucci's espresso + maritozzo stop — iconic no-frills Trastevere bar. Famous chocolate ice cream too.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Bar_San_Calisto_in_Trastevere_(Roma).jpg?width=1200"},
+ {n:"La Buvette",c:"meal",a:"Via Vittoria 44/47",lat:41.9068,lng:12.4792,d:"KMP-approved ⭐ — elegant bistro-café near the Spanish Steps, open breakfast through dinner.",img:null},
+ {n:"Gran Cafè Marcel",c:"meal",a:"Via dei Canestrari 9",lat:41.8977,lng:12.4739,d:"Artist-run souvenir shop by Piazza Navona — hand-illustrated postcards & prints, free coffee. Open ~11–18.",img:null},
+ // street food
+ {n:"L'Antica Salumeria",c:"street",a:"Piazza della Rotonda 4",lat:41.8993,lng:12.4769,d:"Old-school deli right on the Pantheon square. Panini, cheese & wine boards. Open till midnight.",img:null},
+ {n:"Becco",c:"street",a:"Piazzale degli Eroi 7 (Prati)",lat:41.9082,lng:12.4570,d:"Gourmet Japanese-style tramezzini north of the Vatican. Takeaway only; closed Mondays.",img:null},
+ {n:"I Pizzicaroli",c:"street",a:"Via della Fossa 9",lat:41.8987,lng:12.4706,d:"Porchetta and charcuterie boards near Piazza Navona. Open ~11:30–23:00.",img:null},
+ {n:"Dar Filettaro a Santa Barbara",c:"street",a:"Largo dei Librari 88",lat:41.8944,lng:12.4734,d:"Legendary fried salt-cod since 1932. Cash only, evenings only, closed Sundays.",img:"https://www.wantedinrome.com/i/preview/storage/uploads/2019/09/rome-dar-filettaro-filetti-baccala-deep-fried-cod-fillets.jpg"},
+ {n:"Supplizio",c:"street",a:"Via dei Banchi Vecchi 143",lat:41.8976,lng:12.4666,d:"Gourmet supplì (fried rice croquettes) — Rome's favourite snack, done by a top chef.",img:null},
+ {n:"Trapizzino",c:"street",a:"Piazza Trilussa 46 (Trastevere)",lat:41.8898,lng:12.4670,d:"Pizza-pocket triangles filled with Roman stews. Grab one and sit on the riverside steps.",img:"https://commons.wikimedia.org/wiki/Special:FilePath/Trapizzino_-_Pollo_alla_Cacciatora.jpg?width=1200"},
+ {n:"Amerina la Pizzetta",c:"street",a:"Largo dei Librari 82",lat:41.8944,lng:12.4736,d:"Pan-cooked mini pizzette + supplì, same square as Dar Filettaro. Closed Mon-Tue.",img:null},
+ {n:"Felice On The Go",c:"street",a:"Via delle Carrozze 12/a",lat:41.9058,lng:12.4795,d:"Walk-around cacio e pepe in a cup, steps from Piazza di Spagna — from the famous Felice a Testaccio.",img:"https://feliceatestaccio.com/wp-content/uploads/2025/03/carbonara.webp"},
+ {n:"Two Sizes",c:"street",a:"Via del Governo Vecchio 88",lat:41.8980,lng:12.4701,d:"Takeaway tiramisu in two cup sizes — classic, pistachio, caramel. Few doors from Frigidarium.",img:null}
+];
+
+const AGENDA = [
+ {day:"Friday 28 August",sub:"Juliens arrive",evts:[
+  {t:"14:10",d:"Juliens land at Fiumicino (FCO) — AZ 203",b:"julien"},
+  {t:"",d:"Check in: The Tribune Hotel, Via Campania 45",b:"julien"}]},
+ {day:"Saturday 29 August",sub:"Pevzners arrive",evts:[
+  {t:"09:50",d:"Pevzners land — AA 236",b:"pevzner"},
+  {t:"",d:"Check in: Hotel Degli Artisti, Via degli Artisti 18 (under “Mescal”)",b:"pevzner"},
+  {t:"Eve",d:"Dinner: McDonald's Piazza di Spagna (proposed)",s:"The historic one — kids can eat any time, less pressure. 7 min walk from Hotel Degli Artisti.",b:"all",dinner:1}]},
+ {day:"Sunday 30 August",sub:"Golf carts + Pantheon",evts:[
+  {t:"09:30",d:"Golf Cart Tour of Rome",b:"all"},
+  {t:"18:00",d:"Dinner: Osteria da Fortunata, Piazza della Rotonda 6 (Pantheon)",s:"Booked under “Katarina Mescal 1025 AD” for 8 · a 19:00 duplicate exists under “Julien” — cancel one closer to the date.",b:"all",dinner:1}]},
+ {day:"Monday 31 August",sub:"Vatican day",evts:[
+  {t:"07:45",d:"Meet for Vatican tour (under “Julien”)",s:"15 min early — collect tickets for Wednesday's General Audience at the bronze door.",b:"all"},
+  {t:"08:00",d:"Vatican Tour",b:"all"},
+  {t:"11:00",d:"Pasta & Gelato Class",b:"all"},
+  {t:"18–21",d:"Julien boys sleep over at the Pevzners'",b:"julien"},
+  {t:"19:30",d:"Dinner: Moma, Via di San Basilio 42/43",s:"Booked under “Kimberly Julien”.",b:"all",dinner:1}]},
+ {day:"Tuesday 1 September",sub:"Colosseum photos",evts:[
+  {t:"09:00",d:"Family Photos at the Colosseum — PhotoStorica",s:"Meeting point: Via del Colosseo 31, in front of Caffè Roma.",b:"all"},
+  {t:"TBC",d:"Pevzners day trip to Ladispoli (timing to be discussed)",b:"pevzner"},
+  {t:"18–21",d:"Pevzner girls sleep over at the Juliens'",b:"pevzner"},
+  {t:"19:00",d:"Dinner: Imàgo, Piazza Trinità dei Monti 6",s:"Booked under “Katarina Mescal”. Rooftop of the Hassler — dress smart!",b:"all",dinner:1}]},
+ {day:"Wednesday 2 September",sub:"Arrivederci Roma",evts:[
+  {t:"10:00",d:"General Audience at the Vatican",b:"julien"},
+  {t:"11:20",d:"Pevzner train #8418 · Termini → Firenze Santa Maria Novella",b:"pevzner"},
+  {t:"13:50",d:"Julien flight home · FCO AZ 204",b:"julien"}]}
+];
+
+/* ================= AGENDA RENDER ================= */
+const BADGE = {julien:'<span class="badge b-julien">Juliens</span>',pevzner:'<span class="badge b-pevzner">Pevzners</span>',all:'<span class="badge b-all">Everyone</span>'};
+document.getElementById('agenda').innerHTML = AGENDA.map(g=>`
+ <div class="day">
+   <div class="day-h"><h3>${g.day}</h3><span>${g.sub}</span></div>
+   ${g.evts.map(e=>`<div class="evt${e.dinner?' dinner':''}"><div class="t">${e.t||'·'}</div>
+     <div class="d">${e.d} ${BADGE[e.b]||''}${e.s?`<small>${e.s}</small>`:''}</div></div>`).join('')}
+ </div>`).join('');
+
+/* ================= SHARED STATE ================= */
+let me = null;            // {lat,lng}
+let activeCat = 'all';
+const dist = (a,b)=>{const R=6371e3,r=x=>x*Math.PI/180,dφ=r(b.lat-a.lat),dλ=r(b.lng-a.lng),
+  h=Math.sin(dφ/2)**2+Math.cos(r(a.lat))*Math.cos(r(b.lat))*Math.sin(dλ/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));};
+const fmtD = m => m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(1)} km`;
+const gmaps = p => `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`;
+
+function locate(cb){
+  if(!navigator.geolocation){alert('Location not available on this device.');return;}
+  navigator.geolocation.getCurrentPosition(
+    pos=>{me={lat:pos.coords.latitude,lng:pos.coords.longitude};cb&&cb();},
+    ()=>alert('Could not get your location — check location permissions for your browser.'),
+    {enableHighAccuracy:true,timeout:10000});
+}
+
+/* ================= MAP ================= */
+let map, meMarker, markers=[];
+function initMap(){
+  if(map) return;
+  map = L.map('map',{zoomControl:false}).setView([41.899,12.478],14);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+   {attribution:'&copy; OpenStreetMap &copy; CARTO',maxZoom:19}).addTo(map);
+  L.control.zoom({position:'bottomleft'}).addTo(map);
+  renderMarkers();
+}
+function pinIcon(cat){
+  return L.divIcon({className:'',html:`<div class="pin" style="width:30px;height:30px;background:${CATS[cat].color}">${CATS[cat].emoji}</div>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-16]});
+}
+function popupHtml(p){
+  const dd = me?`<span class="dist">${fmtD(dist(me,p))} away · </span>`:'';
+  return `<div class="pop">${p.img?`<img src="${p.img}" onerror="this.remove()">`:''}
+   <div class="pi"><h4>${p.n}</h4><p>${dd}${p.a}<br>${p.d}</p>
+   <a class="gobtn" target="_blank" rel="noopener" href="${gmaps(p)}">🧭 Take me there</a></div></div>`;
+}
+function renderMarkers(){
+  markers.forEach(m=>map.removeLayer(m));markers=[];
+  P.filter(p=>activeCat==='all'||p.c===activeCat).forEach(p=>{
+    const m=L.marker([p.lat,p.lng],{icon:pinIcon(p.c)}).addTo(map).bindPopup(()=>popupHtml(p),{closeButton:false});
+    markers.push(m);
+  });
+}
+document.getElementById('locBtn').addEventListener('click',()=>{
+  const b=document.getElementById('locBtn');b.classList.add('busy');
+  locate(()=>{
+    b.classList.remove('busy');
+    if(meMarker)map.removeLayer(meMarker);
+    meMarker=L.marker([me.lat,me.lng],{icon:L.divIcon({className:'',html:'<div class="mepin" style="width:18px;height:18px"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
+    map.setView([me.lat,me.lng],15);
+  });
+  setTimeout(()=>b.classList.remove('busy'),10000);
+});
+
+/* ================= CHIPS ================= */
+function chipHtml(){
+  return `<button class="chip${activeCat==='all'?' on':''}" data-c="all">All</button>`+
+   Object.entries(CATS).map(([k,v])=>`<button class="chip${activeCat===k?' on':''}" data-c="${k}">${v.label}</button>`).join('');
+}
+function drawChips(){
+  document.getElementById('mapChips').innerHTML=chipHtml();
+  document.getElementById('listChips').innerHTML=chipHtml();
+  document.querySelectorAll('.chip').forEach(c=>c.addEventListener('click',()=>{
+    activeCat=c.dataset.c;drawChips();
+    if(map)renderMarkers();
+    renderList();
+  }));
+}
+
+/* ================= FOOD LIST ================= */
+let sortNear=false;
+function renderList(){
+  let list=P.filter(p=>activeCat==='all'?['gelato','street','meal'].includes(p.c):p.c===activeCat);
+  if(sortNear&&me)list=[...list].sort((a,b)=>dist(me,a)-dist(me,b));
+  document.getElementById('foodList').innerHTML=list.map(p=>{
+    const c=CATS[p.c];
+    const im=p.img?`<div class="im" style="background-image:url('${p.img}')"></div>`
+                  :`<div class="im" style="background:${c.color}22">${c.emoji}</div>`;
+    const dd=sortNear&&me?`<span class="dd">${fmtD(dist(me,p))}</span>`:'';
+    return `<div class="card">${im}<div class="cb">
+      <h4>${p.n}</h4><div class="cat" style="color:${c.color}">${c.label.replace(/^\S+ /,'')}</div>
+      <p>${p.d}</p>
+      <div class="row"><a target="_blank" rel="noopener" href="${gmaps(p)}">🧭 Directions</a>${dd}</div>
+    </div></div>`;}).join('');
+}
+document.getElementById('nearBtn').addEventListener('click',()=>{
+  const b=document.getElementById('nearBtn');
+  if(sortNear){sortNear=false;b.classList.remove('on');b.textContent='📍 Sort by distance from me';renderList();return;}
+  b.textContent='📍 Locating…';
+  locate(()=>{sortNear=true;b.classList.add('on');b.textContent='📍 Sorted — nearest first (tap to reset)';renderList();});
+  setTimeout(()=>{if(!sortNear)b.textContent='📍 Sort by distance from me';},10000);
+});
+
+/* ================= NAV ================= */
+const header=document.getElementById('hdr');
+document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('p-'+b.dataset.p).classList.add('active');
+  const isMap=b.dataset.p==='map';
+  header.style.display=isMap?'none':'';
+  document.querySelector('.map-top').style.top=isMap?'calc(env(safe-area-inset-top) + 8px)':'';
+  document.getElementById('locBtn').style.bottom=`calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px)`;
+  if(isMap){initMap();setTimeout(()=>map.invalidateSize(),50);}
+  window.scrollTo(0,0);
+}));
+
+drawChips();
+renderList();
+</script>
+</body>
+</html>
