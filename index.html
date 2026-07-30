@@ -109,13 +109,87 @@ nav button.on .ico{transform:scale(1.1)}
 .price .n{font-family:'Fraunces',serif;font-size:1.25rem;font-weight:700;color:var(--terra)}
 .price .l{font-size:.68rem;color:var(--muted);margin-top:2px}
 .sec-t{font-size:1.05rem;color:var(--terra);margin:6px 0 10px}
+
+/* ===== Babsie ===== */
+.bab-btn{position:fixed;right:12px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 12px);z-index:900;width:64px;height:64px;border:0;background:none;cursor:pointer;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25));animation:bab-bob 3.2s ease-in-out infinite}
+@keyframes bab-bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-5px) rotate(2deg)}}
+.bab-btn.twirl{animation:bab-twirl .7s ease}
+@keyframes bab-twirl{0%{transform:rotate(0) scale(1)}50%{transform:rotate(180deg) scale(1.15)}100%{transform:rotate(360deg) scale(1)}}
+.bab-bubble{position:fixed;right:14px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 84px);z-index:900;max-width:240px;background:#fff;border:2px solid #e88fb0;border-radius:16px 16px 4px 16px;padding:10px 13px;font-size:.83rem;line-height:1.45;box-shadow:0 4px 14px rgba(0,0,0,.15);opacity:0;transform:translateY(8px) scale(.95);transition:all .25s ease;pointer-events:none}
+.bab-bubble.show{opacity:1;transform:none;pointer-events:auto}
+.bab-bubble b{color:#c94f7c}
+.bab-kiss{position:fixed;z-index:901;font-size:1.1rem;pointer-events:none;animation:bab-kiss 1.1s ease-out forwards}
+@keyframes bab-kiss{0%{opacity:1;transform:translateY(0) scale(.7)}100%{opacity:0;transform:translateY(-70px) scale(1.3)}}
+.bab-strut{position:fixed;left:-90px;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom) + 6px);z-index:899;width:56px;height:56px;pointer-events:none;display:none}
+.bab-strut.go{display:block;animation:bab-strut 11s linear forwards}
+@keyframes bab-strut{0%{left:-90px;transform:rotate(-4deg)}25%{transform:rotate(4deg)}50%{transform:rotate(-4deg)}75%{transform:rotate(4deg)}100%{left:105vw;transform:rotate(-4deg)}}
+.hdr-bab{position:absolute;right:14px;top:50%;transform:translateY(-46%);width:42px;height:42px}
+header{position:sticky}
+.bow-mini{width:15px;height:11px;display:inline-block;vertical-align:-1px;margin-right:5px}
 </style>
 </head>
 <body>
 
+<!-- Babsie: original character — a glam diva mouse -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<symbol id="babsie" viewBox="0 0 120 132">
+  <!-- ears: worn black plush -->
+  <circle cx="26" cy="36" r="20" fill="#332b28"/><circle cx="94" cy="36" r="20" fill="#332b28"/>
+  <circle cx="26" cy="36" r="20" fill="none" stroke="#4a403b" stroke-width="2" opacity=".6"/>
+  <circle cx="94" cy="36" r="20" fill="none" stroke="#4a403b" stroke-width="2" opacity=".6"/>
+  <!-- head: black plush with big worn beige terry face -->
+  <circle cx="60" cy="72" r="35" fill="#332b28"/>
+  <path d="M60 42 Q84 44 90 66 Q94 86 78 99 Q60 110 42 99 Q26 86 30 66 Q36 44 60 42 Z" fill="#cbbba1"/>
+  <!-- terry texture patches -->
+  <circle cx="44" cy="92" r="7" fill="#bfae93" opacity=".5"/><circle cx="76" cy="90" r="6" fill="#bfae93" opacity=".45"/>
+  <circle cx="60" cy="58" r="8" fill="#d6c8ae" opacity=".5"/>
+  <!-- eyes: big flat cream ovals, faded purple pupils (slightly wonky, like her) -->
+  <ellipse cx="46" cy="66" rx="11" ry="8.5" fill="#efe4cd" transform="rotate(-8 46 66)"/>
+  <ellipse cx="75" cy="65" rx="11" ry="8.5" fill="#efe4cd" transform="rotate(7 75 65)"/>
+  <circle cx="47" cy="67" r="4.6" fill="#8a6f9e"/><circle cx="73.5" cy="66" r="4.6" fill="#7c6390"/>
+  <circle cx="47" cy="67" r="1.8" fill="#e9e0d0"/><circle cx="73.5" cy="66" r="1.8" fill="#e9e0d0"/>
+  <!-- blinking lids (SMIL) -->
+  <g fill="#cbbba1">
+    <ellipse cx="46" cy="66" rx="11.5" ry="9" opacity="0" transform="rotate(-8 46 66)">
+      <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;.9;.93;.96;1" dur="4.6s" repeatCount="indefinite"/>
+    </ellipse>
+    <ellipse cx="75" cy="65" rx="11.5" ry="9" opacity="0" transform="rotate(7 75 65)">
+      <animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;.9;.93;.96;1" dur="4.6s" repeatCount="indefinite"/>
+    </ellipse>
+  </g>
+  <!-- diva lashes -->
+  <g stroke="#332b28" stroke-width="1.6" stroke-linecap="round">
+    <path d="M36 60 l-4.5 -3.5"/><path d="M38 57.5 l-3.5 -4.5"/>
+    <path d="M84 59 l4.5 -3.5"/><path d="M82 56.5 l3.5 -4.5"/>
+  </g>
+  <!-- the big shiny black nose -->
+  <circle cx="60" cy="84" r="10" fill="#17120f"/>
+  <ellipse cx="56.5" cy="80.5" rx="3.2" ry="2.4" fill="#5a5350" opacity=".85"/>
+  <!-- faint stitched smile + a touch of lipstick, she insists -->
+  <path d="M50 99 Q60 105 70 99" fill="none" stroke="#b8455e" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- pearls -->
+  <circle cx="48" cy="112" r="4" fill="#fdf6ec" stroke="#d9cdbb"/><circle cx="60" cy="115" r="4" fill="#fdf6ec" stroke="#d9cdbb"/><circle cx="72" cy="112" r="4" fill="#fdf6ec" stroke="#d9cdbb"/>
+  <!-- polka-dot bow -->
+  <g>
+    <path d="M60 22 Q38 6 34 22 Q31 34 52 30 Z" fill="#ec6f9c"/>
+    <path d="M60 22 Q82 6 86 22 Q89 34 68 30 Z" fill="#ec6f9c"/>
+    <circle cx="60" cy="24" r="7" fill="#d95586"/>
+    <circle cx="44" cy="19" r="2.2" fill="#fff"/><circle cx="50" cy="26" r="1.8" fill="#fff"/>
+    <circle cx="76" cy="19" r="2.2" fill="#fff"/><circle cx="70" cy="26" r="1.8" fill="#fff"/>
+  </g>
+</symbol>
+<symbol id="bab-bow" viewBox="0 0 60 40">
+  <path d="M30 20 Q8 4 4 20 Q1 32 22 28 Z" fill="#ec6f9c"/>
+  <path d="M30 20 Q52 4 56 20 Q59 32 38 28 Z" fill="#ec6f9c"/>
+  <circle cx="30" cy="21" r="7" fill="#d95586"/>
+  <circle cx="14" cy="17" r="2.5" fill="#fff"/><circle cx="46" cy="17" r="2.5" fill="#fff"/>
+</symbol>
+</svg>
+
 <header id="hdr">
   <h1>Roma 2026 🇮🇹</h1>
-  <p>Julien &amp; Pevzner families · 28 Aug – 2 Sep</p>
+  <p>Julien &amp; Pevzner families · 28 Aug – 2 Sep · with Babsie 💋</p>
+  <svg class="hdr-bab"><use href="#babsie"/></svg>
 </header>
 
 <!-- ================= AGENDA ================= -->
@@ -213,6 +287,10 @@ nav button.on .ico{transform:scale(1.1)}
     </div>
   </div>
 </div>
+
+<div class="bab-bubble" id="babBubble"></div>
+<button class="bab-btn" id="babBtn" aria-label="Babsie"><svg width="64" height="70"><use href="#babsie"/></svg></button>
+<svg class="bab-strut" id="babStrut"><use href="#babsie"/></svg>
 
 <nav>
   <button class="on" data-p="agenda"><span class="ico">📅</span>Agenda</button>
@@ -415,13 +493,87 @@ document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()
   const isMap=b.dataset.p==='map';
   header.style.display=isMap?'none':'';
   document.querySelector('.map-top').style.top=isMap?'calc(env(safe-area-inset-top) + 8px)':'';
-  document.getElementById('locBtn').style.bottom=`calc(var(--nav-h) + env(safe-area-inset-bottom) + 14px)`;
+  document.getElementById('locBtn').style.bottom=`calc(var(--nav-h) + env(safe-area-inset-bottom) + 88px)`;
   if(isMap){initMap();setTimeout(()=>map.invalidateSize(),50);}
   window.scrollTo(0,0);
+  babQuip(b.dataset.p);
 }));
 
 drawChips();
 renderList();
+
+/* ================= BABSIE 💋 ================= */
+const BQ = {
+ general:[
+  "Ciao, bellissimi! <b>Babsie</b> is here. You may applaud quietly.",
+  "Rome wasn't built in a day, darling. Perfection like <b>moi</b> takes even longer.",
+  "Kissy kissy! 💋 Yes, I woke up this gorgeous.",
+  "I'm not saying I'm the eighth wonder of Rome… the other seven said it first.",
+  "Paparazzi to the left, gelato to the right. A queen's dilemma.",
+  "Be a dear and hydrate. Beauty like ours doesn't maintain itself. Well — <b>mine</b> does.",
+  "Throw a coin in the Trevi if you must. I grant wishes just by appearing."
+ ],
+ agenda:[
+  "A schedule this full and <b>moi</b> still finds time to be stunning. Discipline, darlings.",
+  "Golf cart tour? Make sure the wind hits my good side. Both sides.",
+  "The Pope on Wednesday, <b>moi</b> every day. Rome is spoiled this week.",
+  "Sleepovers, tours, Michelin stars… and yet the main event remains <b>moi</b>."
+ ],
+ map:[
+  "All roads lead to <b>moi</b>. But fine, use the map too.",
+  "Turn left at 'fabulous'. That's <b>moi</b>, by the way.",
+  "I never get lost, darling. Places get found by <b>moi</b>.",
+  "That little blue dot? Adorable. It follows <b>moi</b> everywhere."
+ ],
+ food:[
+  "Two scoops for you, three compliments for <b>moi</b>.",
+  "Pistachio matches my bow. Everything matches my bow.",
+  "A lady never counts calories in Rome. A lady counts admirers.",
+  "Order the cacio e pepe. <b>Moi</b> will supervise. And taste. Twice.",
+  "Gelato melts, darling. Gorgeousness — mine — is forever."
+ ],
+ info:[
+  "“No pane, grazie” — more room for gelato, obviously.",
+  "€1 espresso, priceless <b>moi</b>. Rome maths, darling.",
+  "Tip: stand near <b>moi</b> in photos. Instant glamour, no filter needed."
+ ]
+};
+const babBtn=document.getElementById('babBtn'),babBubble=document.getElementById('babBubble'),babStrut=document.getElementById('babStrut');
+let babTimer=null,lastQ='';
+function babSay(html){
+  babBubble.innerHTML=html;babBubble.classList.add('show');
+  clearTimeout(babTimer);babTimer=setTimeout(()=>babBubble.classList.remove('show'),6500);
+}
+function pick(arr){let q;do{q=arr[Math.floor(Math.random()*arr.length)]}while(q===lastQ&&arr.length>1);lastQ=q;return q;}
+function babQuip(tab){
+  const pool=(BQ[tab]&&Math.random()<0.7)?BQ[tab]:BQ.general;
+  setTimeout(()=>babSay(pick(pool)),600);
+}
+function kisses(x,y){
+  for(let i=0;i<3;i++){const s=document.createElement('span');s.className='bab-kiss';
+   s.textContent=['💋','💖','✨'][i];s.style.left=(x-10+i*16-16)+'px';s.style.top=(y-20)+'px';
+   s.style.animationDelay=(i*0.12)+'s';document.body.appendChild(s);setTimeout(()=>s.remove(),1600);}
+}
+babBtn.addEventListener('click',e=>{
+  babBtn.classList.remove('twirl');void babBtn.offsetWidth;babBtn.classList.add('twirl');
+  const r=babBtn.getBoundingClientRect();kisses(r.left+r.width/2,r.top);
+  const cur=document.querySelector('nav button.on').dataset.p;
+  const pool=Math.random()<0.5&&BQ[cur]?BQ[cur]:BQ.general;
+  babSay(pick(pool));
+});
+babBubble.addEventListener('click',()=>babBubble.classList.remove('show'));
+/* strut across the screen: once early, then occasionally */
+function strut(){
+  babStrut.classList.remove('go');void babStrut.offsetWidth;babStrut.classList.add('go');
+  setTimeout(()=>babStrut.classList.remove('go'),11500);
+}
+setTimeout(strut,25000);
+setInterval(()=>{if(Math.random()<0.3)strut();},120000);
+/* welcome */
+setTimeout(()=>babSay("Ciao bellissimi, it's <b>moi</b> — <b>Babsie</b>! 💋 Your gorgeous guide to Roma. Tap me any time you need beauty advice. Or directions. Mostly beauty advice."),1800);
+/* mini bows on section titles + day headers */
+const BOW='<svg class="bow-mini"><use href="#bab-bow"/></svg>';
+document.querySelectorAll('.sec-t, .day-h h3').forEach(el=>el.insertAdjacentHTML('afterbegin',BOW));
 </script>
 </body>
 </html>
